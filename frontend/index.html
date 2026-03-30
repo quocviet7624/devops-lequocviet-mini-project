@@ -4,25 +4,31 @@
     <meta charset="UTF-8">
     <title>Quản Lý Sinh Viên - DevOps Project</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; background-color: #f4f7f6; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; }
+        .form-group { background: #e9ecef; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        input { padding: 10px; margin-right: 10px; border: 1px solid #ddd; border-radius: 5px; width: 25%; }
+        button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-add { background: #28a745; color: white; }
+        .btn-edit { background: #ffc107; color: black; margin-right: 5px; }
+        .btn-delete { background: #dc3545; color: white; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #f4f4f4; }
-        .form-group { margin-bottom: 10px; }
-        input { padding: 8px; margin-right: 5px; }
-        button { padding: 8px 15px; cursor: pointer; }
-        .btn-delete { color: red; cursor: pointer; border: none; background: none; }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
+        th { background: #2c3e50; color: white; }
     </style>
 </head>
 <body>
-    <h1>Trang Quản Lý Sinh Viên</h1>
+<div class="container">
+    <h1>🎓 Hệ Thống Quản Lý Sinh Viên</h1>
 
-    <div style="background: #f9f9f9; padding: 15px; border-radius: 5px;">
-        <h3>Thêm Sinh Viên Mới</h3>
+    <div class="form-group">
+        <h3 id="formTitle">Thêm Sinh Viên Mới</h3>
         <input id="name" placeholder="Họ tên">
         <input id="msv" placeholder="MSSV">
         <input id="class" placeholder="Lớp">
-        <button onclick="addStudent()" style="background: green; color: white; border: none;">Thêm</button>
+        <button class="btn-add" id="btnSubmit" onclick="handleSubmit()">Thêm</button>
+        <button id="btnCancel" onclick="resetForm()" style="display:none; background:#6c757d; color:white;">Hủy</button>
     </div>
 
     <table>
@@ -36,46 +42,76 @@
         </thead>
         <tbody id="studentTable"></tbody>
     </table>
+</div>
 
-    <script>
-        const API = "http://localhost:5000/api/students";
+<script>
+    const API = "http://localhost:5000/api/students";
+    let editingId = null;
 
-        async function loadStudents() {
-            const res = await fetch(API);
-            const data = await res.json();
-            const table = document.getElementById('studentTable');
-            table.innerHTML = data.map(s => `
-                <tr>
-                    <td>${s.name}</td>
-                    <td>${s.msv}</td>
-                    <td>${s.class}</td>
-                    <td><button class="btn-delete" onclick="deleteStudent('${s._id}')">Xóa</button></td>
-                </tr>
-            `).join('');
-        }
+    async function loadStudents() {
+        const res = await fetch(API);
+        const data = await res.json();
+        const table = document.getElementById('studentTable');
+        table.innerHTML = data.map(s => `
+            <tr>
+                <td>${s.name}</td>
+                <td>${s.msv}</td>
+                <td>${s.class}</td>
+                <td>
+                    <button class="btn-edit" onclick="editMode('${s._id}', '${s.name}', '${s.msv}', '${s.class}')">Sửa</button>
+                    <button class="btn-delete" onclick="deleteStudent('${s._id}')">Xóa</button>
+                </td>
+            </tr>
+        `).join('');
+    }
 
-        async function addStudent() {
-            const body = {
-                name: document.getElementById('name').value,
-                msv: document.getElementById('msv').value,
-                class: document.getElementById('class').value
-            };
-            await fetch(API, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(body)
-            });
+    async function handleSubmit() {
+        const body = {
+            name: document.getElementById('name').value,
+            msv: document.getElementById('msv').value,
+            class: document.getElementById('class').value
+        };
+        if(!body.name || !body.msv) return alert("Vui lòng nhập đủ!");
+
+        const method = editingId ? 'PUT' : 'POST';
+        const url = editingId ? `${API}/${editingId}` : API;
+
+        await fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        });
+        resetForm();
+        loadStudents();
+    }
+
+    function editMode(id, name, msv, className) {
+        editingId = id;
+        document.getElementById('name').value = name;
+        document.getElementById('msv').value = msv;
+        document.getElementById('class').value = className;
+        document.getElementById('formTitle').innerText = "Cập Nhật Thông Tin";
+        document.getElementById('btnSubmit').innerText = "Cập Nhật";
+        document.getElementById('btnCancel').style.display = "inline";
+    }
+
+    function resetForm() {
+        editingId = null;
+        document.getElementById('name').value = '';
+        document.getElementById('msv').value = '';
+        document.getElementById('class').value = '';
+        document.getElementById('formTitle').innerText = "Thêm Sinh Viên Mới";
+        document.getElementById('btnSubmit').innerText = "Thêm";
+        document.getElementById('btnCancel').style.display = "none";
+    }
+
+    async function deleteStudent(id) {
+        if(confirm('Bạn có chắc muốn xóa?')) {
+            await fetch(`${API}/${id}`, { method: 'DELETE' });
             loadStudents();
         }
-
-        async function deleteStudent(id) {
-            if(confirm('Bạn có chắc muốn xóa?')) {
-                await fetch(`${API}/${id}`, { method: 'DELETE' });
-                loadStudents();
-            }
-        }
-
-        loadStudents();
-    </script>
+    }
+    loadStudents();
+</script>
 </body>
 </html>
