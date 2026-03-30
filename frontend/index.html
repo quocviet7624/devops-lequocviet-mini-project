@@ -1,38 +1,81 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head><title>DevOps Project</title></head>
+<head>
+    <meta charset="UTF-8">
+    <title>Quản Lý Sinh Viên - DevOps Project</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .form-group { margin-bottom: 10px; }
+        input { padding: 8px; margin-right: 5px; }
+        button { padding: 8px 15px; cursor: pointer; }
+        .btn-delete { color: red; cursor: pointer; border: none; background: none; }
+    </style>
+</head>
 <body>
-    <h1>Thông tin cá nhân (Lấy từ DB)</h1>
-    <div id="info" style="border: 1px solid #000; padding: 10px; margin-bottom: 10px;"></div>
-    
-    <h3>Cập nhật thông tin:</h3>
-    <input id="name" placeholder="Họ tên">
-    <input id="msv" placeholder="MSSV">
-    <input id="class" placeholder="Lớp">
-    <button onclick="updateInfo()">Cập nhật</button>
+    <h1>Trang Quản Lý Sinh Viên</h1>
+
+    <div style="background: #f9f9f9; padding: 15px; border-radius: 5px;">
+        <h3>Thêm Sinh Viên Mới</h3>
+        <input id="name" placeholder="Họ tên">
+        <input id="msv" placeholder="MSSV">
+        <input id="class" placeholder="Lớp">
+        <button onclick="addStudent()" style="background: green; color: white; border: none;">Thêm</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Họ tên</th>
+                <th>MSSV</th>
+                <th>Lớp</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody id="studentTable"></tbody>
+    </table>
 
     <script>
-        const API = "http://localhost:5000/api";
-    
-        function loadInfo() {
-            fetch(`${API}/about`).then(r => r.json()).then(data => {
-                document.getElementById('info').innerHTML = `Họ tên: ${data.name} <br> MSSV: ${data.msv} <br> Lớp: ${data.class}`;
-            });
+        const API = "http://localhost:5000/api/students";
+
+        async function loadStudents() {
+            const res = await fetch(API);
+            const data = await res.json();
+            const table = document.getElementById('studentTable');
+            table.innerHTML = data.map(s => `
+                <tr>
+                    <td>${s.name}</td>
+                    <td>${s.msv}</td>
+                    <td>${s.class}</td>
+                    <td><button class="btn-delete" onclick="deleteStudent('${s._id}')">Xóa</button></td>
+                </tr>
+            `).join('');
         }
 
-        function updateInfo() {
+        async function addStudent() {
             const body = {
                 name: document.getElementById('name').value,
                 msv: document.getElementById('msv').value,
                 class: document.getElementById('class').value
             };
-            fetch(`${API}/update`, {
+            await fetch(API, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(body)
-            }).then(() => { alert("Xong!"); loadInfo(); });
+            });
+            loadStudents();
         }
-        loadInfo();
+
+        async function deleteStudent(id) {
+            if(confirm('Bạn có chắc muốn xóa?')) {
+                await fetch(`${API}/${id}`, { method: 'DELETE' });
+                loadStudents();
+            }
+        }
+
+        loadStudents();
     </script>
 </body>
 </html>
