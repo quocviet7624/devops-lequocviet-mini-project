@@ -2,25 +2,33 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Quản Lý Sinh Viên - DevOps Project</title>
+    <title>Quản Lý Sinh Viên - Lê Quốc Việt</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; background-color: #f4f7f6; }
         .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; text-align: center; }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 5px; }
+        .about-link { text-align: center; margin-bottom: 20px; }
+        .about-link a { color: #3498db; text-decoration: none; font-weight: bold; font-size: 0.9em; }
         .form-group { background: #e9ecef; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         input { padding: 10px; margin-right: 10px; border: 1px solid #ddd; border-radius: 5px; width: 25%; }
-        button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-add { background: #28a745; color: white; }
+        .btn-add:hover { background: #218838; }
         .btn-edit { background: #ffc107; color: black; margin-right: 5px; }
         .btn-delete { background: #dc3545; color: white; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
         th { background: #2c3e50; color: white; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>🎓 Hệ Thống Quản Lý Sinh Viên</h1>
+    <div class="about-link">
+        <a href="http://localhost:5000/api/about" target="_blank">ℹ️ Click để xem thông tin tác giả (API /about)</a> | 
+        <a href="http://localhost:5000/health" target="_blank">🩺 Kiểm tra Health Check</a>
+    </div>
 
     <div class="form-group">
         <h3 id="formTitle">Thêm Sinh Viên Mới</h3>
@@ -49,20 +57,22 @@
     let editingId = null;
 
     async function loadStudents() {
-        const res = await fetch(API);
-        const data = await res.json();
-        const table = document.getElementById('studentTable');
-        table.innerHTML = data.map(s => `
-            <tr>
-                <td>${s.name}</td>
-                <td>${s.msv}</td>
-                <td>${s.class}</td>
-                <td>
-                    <button class="btn-edit" onclick="editMode('${s._id}', '${s.name}', '${s.msv}', '${s.class}')">Sửa</button>
-                    <button class="btn-delete" onclick="deleteStudent('${s._id}')">Xóa</button>
-                </td>
-            </tr>
-        `).join('');
+        try {
+            const res = await fetch(API);
+            const data = await res.json();
+            const table = document.getElementById('studentTable');
+            table.innerHTML = data.map(s => `
+                <tr>
+                    <td>${s.name}</td>
+                    <td>${s.msv}</td>
+                    <td>${s.class}</td>
+                    <td>
+                        <button class="btn-edit" onclick="editMode('${s._id}', '${s.name}', '${s.msv}', '${s.class}')">Sửa</button>
+                        <button class="btn-delete" onclick="deleteStudent('${s._id}')">Xóa</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) { console.error("Lỗi tải dữ liệu:", err); }
     }
 
     async function handleSubmit() {
@@ -71,7 +81,7 @@
             msv: document.getElementById('msv').value,
             class: document.getElementById('class').value
         };
-        if(!body.name || !body.msv) return alert("Vui lòng nhập đủ!");
+        if(!body.name || !body.msv) return alert("Vui lòng nhập đủ thông tin!");
 
         const method = editingId ? 'PUT' : 'POST';
         const url = editingId ? `${API}/${editingId}` : API;
@@ -91,7 +101,7 @@
         document.getElementById('msv').value = msv;
         document.getElementById('class').value = className;
         document.getElementById('formTitle').innerText = "Cập Nhật Thông Tin";
-        document.getElementById('btnSubmit').innerText = "Cập Nhật";
+        document.getElementById('btnSubmit').innerText = "Lưu Thay Đổi";
         document.getElementById('btnCancel').style.display = "inline";
     }
 
@@ -106,7 +116,7 @@
     }
 
     async function deleteStudent(id) {
-        if(confirm('Bạn có chắc muốn xóa?')) {
+        if(confirm('Bạn có chắc muốn xóa sinh viên này?')) {
             await fetch(`${API}/${id}`, { method: 'DELETE' });
             loadStudents();
         }
